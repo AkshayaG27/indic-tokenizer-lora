@@ -11,11 +11,18 @@ Professional Slate & Navy Enterprise Theme.
 
 from __future__ import annotations
 
+import os
+import sys
+import time
 from pathlib import Path
+
+# Ensure project root is in sys.path before importing from 'src'
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 import html
 import json
-import os
-import time
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -30,7 +37,6 @@ from src.tokenizer.unicode_regex import check_syllable_fracture, INDIC_GRAPHEME_
 from src.sft.lora_model import DEFAULT_BASE_MODEL
 
 # Directory paths resolved relative to this file
-ROOT_DIR = Path(__file__).resolve().parent.parent
 ARTIFACTS_DIR = ROOT_DIR / "artifacts"
 
 
