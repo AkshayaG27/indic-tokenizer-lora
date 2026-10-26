@@ -1,0 +1,28 @@
+{
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "epochs": 2,
+  "batch_size": 2,
+  "learning_rate": 0.0003,
+  "training_time_seconds": 240.96,
+  "parameter_efficiency": {
+    "trainable_parameters": 540672,
+    "total_parameters": 494573440,
+    "trainable_percentage": 0.1093,
+    "parameter_budget_satisfied": true
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.4041,
+      "val_loss": 1.2896,
+      "val_perplexity": 3.63
+    },
+    {
+      "epoch": 2,
+      "train_loss": 1.3096,
+      "val_loss": 1.2672,
+      "val_perplexity": 3.55
+    }
+  ],
+  "output_dir": "artifacts/lora_adapter"
+}

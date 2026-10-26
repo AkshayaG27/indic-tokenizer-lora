@@ -1,0 +1,26 @@
+# Project 3: Indic Tokenizer Fertility Pareto Audit & Domain LoRA SFT
+# PyTorch & Parameter-Efficient Fine-Tuning (PEFT)
+torch>=2.0.0
+transformers>=4.38.0
+peft>=0.9.0
+accelerate>=0.27.0
+
+# Computational Linguistics, Tokenization & Regex
+tokenizers>=0.15.0
+tiktoken>=0.6.0
+regex>=2023.12.0
+
+# Evaluation & Metrics
+sacrebleu>=2.4.0
+scipy>=1.10.0
+
+# Numeric & Data Analysis
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Interactive Audit Suite & Visualization
+streamlit>=1.30.0
+plotly>=5.15.0
+
+# Quality Assurance & Testing
+pytest>=7.4.0

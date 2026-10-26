@@ -1,0 +1,22 @@
+[
+  {
+    "target_vocab_size": 512,
+    "achieved_vocab_size": 512,
+    "output_path": "artifacts\\tokenizer_bpe_512.json"
+  },
+  {
+    "target_vocab_size": 1024,
+    "achieved_vocab_size": 1024,
+    "output_path": "artifacts\\tokenizer_bpe_1k.json"
+  },
+  {
+    "target_vocab_size": 2048,
+    "achieved_vocab_size": 2048,
+    "output_path": "artifacts\\tokenizer_bpe_2k.json"
+  },
+  {
+    "target_vocab_size": 4096,
+    "achieved_vocab_size": 3892,
+    "output_path": "artifacts\\tokenizer_bpe_4k.json"
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "knee_of_the_curve": "Custom BPE (2K -> 4K)",
+  "explanation": "Expanding from 2K to 4K achieves near 1.0 parity (2.07 tokens/word) with only 15.2 MB of embedding RAM, outperforming GPT-4's 14.45 fertility at 391 MB RAM.",
+  "marginal_transitions": [
+    {
+      "transition": "Custom BPE (512) -> Custom BPE (1K)",
+      "vocab_delta": "512 -> 1024",
+      "ram_added_mb": 2.0,
+      "telugu_fertility_reduced": 1.476,
+      "marginal_efficiency (fert_drop_per_MB)": 0.738
+    },
+    {
+      "transition": "Custom BPE (1K) -> Custom BPE (2K)",
+      "vocab_delta": "1024 -> 2048",
+      "ram_added_mb": 4.0,
+      "telugu_fertility_reduced": 0.452,
+      "marginal_efficiency (fert_drop_per_MB)": 0.113
+    },
+    {
+      "transition": "Custom BPE (2K) -> Custom BPE (4K)",
+      "vocab_delta": "2048 -> 3892",
+      "ram_added_mb": 7.2,
+      "telugu_fertility_reduced": 2.604,
+      "marginal_efficiency (fert_drop_per_MB)": 0.3617
+    }
+  ]
+}
