@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project 3 Viva Voce Defense Guide — Indic Tokenizer & LoRA SFT</title>
+    <title>Project 3 Viva Voce Defense Master Guide — Indic Tokenizer Pareto Audit & LoRA SFT</title>
     <!-- KaTeX for high-performance LaTeX math rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
@@ -52,7 +52,7 @@
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1140px;
             margin: 0 auto;
             padding: 0 24px;
         }
@@ -121,6 +121,79 @@
             font-size: 0.7rem;
             color: var(--text-muted);
             text-transform: uppercase;
+        }
+
+        /* Theory Module Styling */
+        .theory-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            margin: 32px 0 40px 0;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .theory-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+        }
+
+        .theory-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theory-pill {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .theory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 16px;
+        }
+
+        .theory-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 18px;
+        }
+
+        .theory-card h3 {
+            font-size: 1.0rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theory-card p, .theory-card ul {
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        .theory-card ul {
+            padding-left: 20px;
+            margin-top: 6px;
         }
 
         .controls-bar {
@@ -406,13 +479,13 @@
         <div class="container">
             <div class="header-content">
                 <div>
-                    <div class="title-badge">UMC301 Project 3 • Pre/Post-Training Track</div>
+                    <div class="title-badge">UMC301 Project 3 • Pre/Post-Training Pillar</div>
                     <h1>Indic Tokenizer Pareto Audit & Domain LoRA SFT Viva Voce</h1>
-                    <div class="subtitle">Grapheme-Aware BPE • Unicode Trap Resolution • Bits-Per-Byte • LoRA PEFT ($r=8, \alpha=16$)</div>
+                    <div class="subtitle">Grapheme-Aware BPE • The Unicode Trap • Bits-Per-Byte • LoRA PEFT ($r=8, \alpha=16$) • Hindi & Telugu</div>
                 </div>
                 <div class="stats-strip">
                     <div class="stat-item">
-                        <div class="stat-value">5</div>
+                        <div class="stat-value">10</div>
                         <div class="stat-label">Viva MCQs</div>
                     </div>
                     <div class="stat-item">
@@ -425,6 +498,69 @@
     </header>
 
     <main class="container">
+
+        <!-- Theoretical Foundations Section -->
+        <section class="theory-section">
+            <div class="theory-header">
+                <div class="theory-title">
+                    <span>Core Theoretical Foundations & Mathematical Formulations</span>
+                </div>
+                <span class="theory-pill">Chapter 08 & Chapter 09 Foundations</span>
+            </div>
+            
+            <div class="theory-grid">
+                <div class="theory-card">
+                    <h3>1. The Akshara Structure & The Unicode Trap</h3>
+                    <p>Indian scripts (Devanagari, Telugu) are <strong>abugidas</strong> structured into syllables:
+                    $$\text{Akshara} = C_1 + (\text{Virama} + C_2)^* + \text{Matra} + \text{Anusvara}$$
+                    Standard regexes (`\p{L}+`) match only letters, stopping before combining marks $\p{M}$. Because BPE forbids merges across chunk boundaries, matras fall back to raw UTF-8 bytes, causing Telugu fertility to explode to **14.45 tokens/word** in `cl100k_base`.
+                    </p>
+                </div>
+
+                <div class="theory-card">
+                    <h3>2. Grapheme-Aware Pre-Tokenization</h3>
+                    <p>Our surgical regex:
+                    $$(?:\p{L}[\p{M}\u200c\u200d]*)+$$
+                    binds base consonants and all succeeding vowel signs/viramas into atomic chunks. Eliminates the Unicode Trap and restores Telugu token fertility to **2.07 tokens/word** (1.00× Parity).
+                    </p>
+                </div>
+
+                <div class="theory-card">
+                    <h3>3. Shannon Entropy & Bits-Per-Byte</h3>
+                    <p>Surprisal normalized by raw uncompressed UTF-8 bytes:
+                    $$\text{BPB}(s) = \frac{\sum_{i=1}^N -\log_2 P(t_i)}{\text{Total UTF-8 Bytes of } s}$$
+                    Our custom BPE achieves **1.02 BPB** on Indic text vs **4.54 BPB** for `cl100k_base`.
+                    </p>
+                </div>
+
+                <div class="theory-card">
+                    <h3>4. Embedding Table RAM & The Pareto Knee</h3>
+                    <p>Embedding matrix RAM footprint:
+                    $$\mathcal{M}_{\text{embed}} = |V| \times d_{\text{model}} \times b_{\text{param}}$$
+                    Expanding vocabulary from $512 \to 4\text{K}$ reduces fertility by $4.53$ with $+14.0\text{ MB}$ RAM. Beyond $4\text{K}$, frequent syllables are atomic; marginal compression drops to $0.36$, making $|V| = 4\text{K}$ the optimal Pareto knee.
+                    </p>
+                </div>
+
+                <div class="theory-card">
+                    <h3>5. LoRA Parameter Decomposition</h3>
+                    <p>For frozen base weight $W_0 \in \mathbb{R}^{d \times k}$:
+                    $$W = W_0 + \frac{\alpha}{r} B A \quad (B \in \mathbb{R}^{d \times r}, A \in \mathbb{R}^{r \times k})$$
+                    With $r=8, \alpha=16$. Initializing $B=0$ and $A \sim \mathcal{N}(0, \sigma^2)$ guarantees $\Delta W = 0$ at step 0, training only **0.3414%** of parameters.
+                    </p>
+                </div>
+
+                <div class="theory-card">
+                    <h3>6. The Embedding Misalignment Trap</h3>
+                    <p>Plugging a custom tokenizer into a frozen pre-trained model corrupts learned coordinate mappings. We maintain strict decoupling:
+                    <ul>
+                        <li><strong>Track A:</strong> Tokenizer audit & Pareto mapping.</li>
+                        <li><strong>Track B:</strong> SFT on base SLM using its <strong>native pre-trained tokenizer</strong> with prompt loss masking (`labels = -100`).</li>
+                    </ul>
+                    </p>
+                </div>
+            </div>
+        </section>
+
         <div class="controls-bar">
             <input type="text" id="searchInput" class="search-input" placeholder="Search questions (e.g. Unicode Trap, BPB, LoRA, Misalignment, Akshara)..." oninput="filterSearch()">
             <div style="display: flex; gap: 10px;">
@@ -734,12 +870,282 @@
             </div>
         </div>
 
+        <!-- Question 6 -->
+        <div class="q-card" data-keywords="containment invariant bpe listing 9.1 subword chunk substring">
+            <div class="q-header">
+                <div class="q-num-badge">Question 6</div>
+                <div>
+                    <div class="q-topic">Textbook Rigor: The BPE Containment Invariant</div>
+                    <div class="q-question">What is the "Containment Invariant" defined in Textbook Chapter 09 (Listing 9.1), and why is it critical for multi-lingual subword tokenizers?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">Every emitted subword token must be a strict substring of exactly one pre-tokenization chunk; tokens must never cross chunk boundaries or span across punctuation/spaces.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">The vocabulary size must contain all 1,114,112 possible Unicode codepoints in its initial merge table.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">All tokens must contain an odd number of bytes to prevent alignment faults in GPU shared memory.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">The training corpus must contain equal proportions of English, Hindi, and Telugu sentences.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-box">
+                        <div class="defense-box-title">The Containment Invariant (Chapter 09, Listing 9.1)</div>
+                        Let $s$ be a raw text string, and let $\mathcal{P}(s) = [c_1, c_2, \dots, c_K]$ denote the pre-tokenization partition emitted by the regex.
+                        Let $\mathcal{T}(s) = [t_1, t_2, \dots, t_N]$ denote the final subword tokens emitted by the BPE model.
+                        <br><br>
+                        <strong>The Containment Invariant:</strong>
+                        $$\forall t_i \in \mathcal{T}(s), \quad \exists ! c_j \in \mathcal{P}(s) \quad \text{such that} \quad t_i \sqsubseteq c_j$$
+                        <em>(Every token $t_i$ must be a strict contiguous substring $\sqsubseteq$ of exactly one pre-tokenization chunk $c_j$).</em>
+                        <br><br>
+                        <strong>Why it matters:</strong> If merges were permitted across pre-tokenization chunks, common punctuation marks (e.g. periods, commas) or whitespace could merge with preceding words (e.g. `"done."` or `"book "`), artificially doubling vocabulary size and destroying compositionality across languages.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 7 -->
+        <div class="q-card" data-keywords="lora rank r alpha scaling factor effective learning rate">
+            <div class="q-header">
+                <div class="q-num-badge">Question 7</div>
+                <div>
+                    <div class="q-topic">LoRA Hyperparameter Dynamics: Rank $r$ and Scaling $\alpha$</div>
+                    <div class="q-question">In LoRA, what is the role of the scaling hyperparameter $\alpha$, and what happens when you double rank $r$ while keeping $\alpha$ fixed?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">The scaling factor $\frac{\alpha}{r}$ stabilizes adapter updates when varying rank $r$; doubling rank $r$ from 8 to 16 with fixed $\alpha=16$ halves the effective step size of the adapter gradient, keeping the learning rate stable without manual retuning.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">$\alpha$ is the $L_2$ weight decay multiplier; doubling $r$ increases memory consumption by a factor of $2^r$.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">$\alpha$ determines the number of attention heads adapted; doubling $r$ disables causal attention masking.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">$\alpha$ controls the dropout probability of the feedforward projection layer.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-text">
+                        <strong>The Constant Scale Factor $\frac{\alpha}{r}$ (Hu et al., 2021):</strong>
+                        In standard fine-tuning, when you change model capacity or rank, the optimal learning rate $\eta$ changes.
+                        In LoRA:
+                        $$\Delta W = \frac{\alpha}{r} B A$$
+                        When rank $r$ is initialized Gaussian with variance $\sigma^2 = 1/r$, the expected magnitude of $B A$ scales proportionally with $\sqrt{r}$.
+                        By scaling by $\frac{\alpha}{r}$, the magnitude of the adapter update $\Delta W$ remains approximately invariant to changes in rank $r$.
+                        <br><br>
+                        In our implementation in [`src/sft/lora_model.py`](file:///c:/Users/aksha/DSAI_Projects/Project3_Indic_Tokenizer_LoRA_SFT/src/sft/lora_model.py#L25-L42), setting $r=8, \alpha=16$ yields a multiplier of $\frac{16}{8} = 2.0$, providing strong signal amplification into $W_q$ and $W_v$ during instruction fine-tuning.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 8 -->
+        <div class="q-card" data-keywords="language tax api pricing latency disparity openai cl100k indic">
+            <div class="q-header">
+                <div class="q-num-badge">Question 8</div>
+                <div>
+                    <div class="q-topic">Token Economics: The "Language Tax" Quantification</div>
+                    <div class="q-question">How is the "Language Tax" formally defined and quantified when comparing OpenAI's `cl100k_base` on English vs. Telugu?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">Language Tax is the ratio of token fertility for a target language compared to English for semantically equivalent text; for `cl100k_base`, Telugu requires $14.45\text{ tokens/word}$ vs $1.30$ for English, imposing an exact $11.1\times$ API pricing and context latency penalty.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">Language Tax is an excise tax levied by the Indian Ministry of Electronics & IT on foreign cloud API calls.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">Language Tax represents the percentage of GPU VRAM wasted due to 32-bit floating point weights.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">Language Tax measures the difference in training loss between Hindi and English validation sets.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-box">
+                        <div class="defense-box-title">Mathematical Formulation of Language Tax ($\mathcal{T}_{\text{lang}}$)</div>
+                        Let $\mathcal{F}_{\text{lang}}$ denote token fertility (average number of subwords generated per source word):
+                        $$\mathcal{F} = \frac{\text{Total Subword Tokens}}{\text{Total Whitespace Words}}$$
+                        The <strong>Language Tax Disparity Ratio</strong> relative to English is:
+                        $$\mathcal{T}_{\text{lang}} = \frac{\mathcal{F}_{\text{Indic}}}{\mathcal{F}_{\text{English}}}$$
+                        In our Track A audit:
+                        <ul>
+                            <li><strong>OpenAI `cl100k_base` (GPT-4):</strong>
+                                $$\mathcal{F}_{\text{English}} = 1.30, \quad \mathcal{F}_{\text{Telugu}} = 14.45 \implies \mathcal{T}_{\text{Telugu}} = \frac{14.45}{1.30} \approx \mathbf{11.1\times}$$
+                                A Telugu developer pays $1,110\%$ more than an English developer to process the exact same semantic paragraph!
+                            </li>
+                            <li><strong>Custom Grapheme BPE (4K):</strong>
+                                $$\mathcal{F}_{\text{Telugu}} = 2.07 \implies \mathcal{T}_{\text{Telugu}} \approx \mathbf{1.59\times}$$
+                                Eliminating over $85\%$ of the commercial and computational penalty.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 9 -->
+        <div class="q-card" data-keywords="nfc nfd unicode normalization canonical composition decomposition">
+            <div class="q-header">
+                <div class="q-num-badge">Question 9</div>
+                <div>
+                    <div class="q-topic">Data Integrity: Unicode Normalization (NFC vs. NFD)</div>
+                    <div class="q-question">Why must raw Indic text be normalized using Unicode Normalization Form C (NFC) prior to BPE pre-tokenization in `src/tokenizer/unicode_regex.py`?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">Indic text can represent the same visible glyph as either a precomposed single codepoint (NFC) or decomposed multi-codepoints (NFD); failing to normalize fragments vocabulary counts across multiple distinct token IDs for identical words.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">NFC converts all Devanagari characters into ASCII characters to reduce memory consumption.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">NFD is forbidden by the Python 3.10 standard library due to memory leaks.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">NFC automatically translates Telugu sentences into Hindi before BPE merges.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-text">
+                        <strong>The Canonical Equivalence Dilemma in Unicode:</strong>
+                        In Indian scripts, many visual glyphs can be encoded in two distinct byte sequences:
+                        <ul>
+                            <li><strong>NFD (Canonical Decomposition):</strong> Base character followed by separate combining marks. For example, Devanagari <em>क़</em> encoded as <code>U+0915</code> (क) + <code>U+093C</code> (Nukta ़).</li>
+                            <li><strong>NFC (Canonical Composition):</strong> Single precomposed composite codepoint <code>U+0958</code> (क़).</li>
+                        </ul>
+                        To a human, both look identical on screen. But to a naive byte or subword tokenizer, they represent two completely different byte streams!
+                        <br><br>
+                        If unnormalized, the BPE algorithm allocates two separate token IDs for the exact same word depending on whether the source document was typed on an Android keyboard or Windows InScript keyboard. Enforcing <code>normalize_unicode(text, "NFC")</code> ensures canonical deduplication.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 10 -->
+        <div class="q-card" data-keywords="target modules q_proj v_proj k_proj out_proj lora parameter budget">
+            <div class="q-header">
+                <div class="q-num-badge">Question 10</div>
+                <div>
+                    <div class="q-topic">LoRA Architecture: Why Target `q_proj` and `v_proj`?</div>
+                    <div class="q-question">Why did your LoRA configuration target specifically `q_proj` and `v_proj` rather than adapting all linear projection layers in the transformer?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">Adapting $W_q$ alters attention routing while adapting $W_v$ alters feature representation; this combination captures maximal task adaptation with only 460,800 parameters (0.3414%), strictly satisfying the parameter budget invariant (&lt; 1.0%).</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">PyTorch PEFT raises an internal compilation error if `k_proj` or `o_proj` are included in `target_modules`.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">Adapting feedforward layers forces the base model to forget all English pre-training knowledge.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">The key projection matrix $W_k$ contains only frozen RoPE sinusoidal constants, so its weights cannot be modified.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-box">
+                        <div class="defense-box-title">The Minimal Sufficient Adaptation Subspace (Hu et al., 2021)</div>
+                        In the foundational LoRA paper, the authors benchmarked adapting different weight subsets across attention and MLP layers:
+                        <ul>
+                            <li>Adapting $W_q$ alone: Captures which tokens to attend to, but lacks the capacity to transform output representations.</li>
+                            <li>Adapting $W_v$ alone: Transforms semantic features, but cannot steer attention heads toward new syntactic patterns.</li>
+                            <li><strong>Adapting both $W_q$ and $W_v$:</strong> Achieves over 95% of the performance of adapting all projection weights ($W_q, W_k, W_v, W_o, W_{\text{mlp}}$) while keeping trainable parameters under <strong>0.35%</strong>.</li>
+                        </ul>
+                        In our model, adapting `q_proj` and `v_proj` requires only $460,800$ weights ($1.75\text{ MB}$ memory footprint), strictly satisfying AC-5 ($&lt; 1.0\%$ budget) and enabling rapid training on consumer hardware without GPU out-of-memory errors.
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <footer>
         <div class="container">
             <p><strong>UMC301: Applied Data Science & AI</strong> • Computational and Data Sciences (CDS), IISc Bengaluru</p>
-            <p style="margin-top: 6px;">Spec-Driven Development (SDD) • Project 3 Defense Architecture Guide</p>
+            <p style="margin-top: 6px;">Spec-Driven Development (SDD) • Project 3 Master Viva Voce Defense Guide</p>
         </div>
     </footer>
 
