@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 3 Viva Voce Defense Guide — Indic Tokenizer & LoRA SFT</title>
+    <!-- KaTeX for high-performance LaTeX math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+            onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #111827;
+            --bg-card: #1f2937;
+            --bg-card-hover: #283548;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent: #f59e0b;
+            --accent-glow: rgba(245, 158, 11, 0.25);
+            --accent-emerald: #10b981;
+            --accent-rose: #f43f5e;
+            --accent-blue: #3b82f6;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(245, 158, 11, 0.4);
+            --code-bg: #030712;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding-bottom: 80px;
+        }
+
+        header {
+            background: linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(11, 15, 25, 0.9) 100%);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            padding: 20px 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .title-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fcd34d;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, #fef3c7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            margin-top: 4px;
+        }
+
+        .stats-strip {
+            display: flex;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin: 28px 0;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            max-width: 480px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .action-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 9px 14px;
+            border-radius: var(--radius-md);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .q-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+            overflow: hidden;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .q-card:hover {
+            border-color: var(--border-highlight);
+        }
+
+        .q-header {
+            padding: 20px 24px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .q-num-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            white-space: nowrap;
+        }
+
+        .q-topic {
+            font-size: 0.78rem;
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
+
+        .q-question {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .q-body {
+            padding: 24px;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .option-item {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            user-select: none;
+        }
+
+        .option-item:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .option-marker {
+            min-width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-top: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .option-text {
+            font-size: 0.92rem;
+            color: #e2e8f0;
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .option-item.selected-correct {
+            background: rgba(16, 185, 129, 0.15) !important;
+            border-color: var(--accent-emerald) !important;
+        }
+        .option-item.selected-correct .option-marker {
+            background: var(--accent-emerald);
+            color: #ffffff;
+        }
+
+        .option-item.selected-wrong {
+            background: rgba(244, 63, 94, 0.15) !important;
+            border-color: var(--accent-rose) !important;
+        }
+        .option-item.selected-wrong .option-marker {
+            background: var(--accent-rose);
+            color: #ffffff;
+        }
+
+        .reveal-toggle-btn {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.2) 100%);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fde68a;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .reveal-toggle-btn:hover {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.3) 100%);
+            border-color: var(--accent);
+        }
+
+        .defense-dossier {
+            display: none;
+            margin-top: 20px;
+            padding: 22px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .defense-dossier.open { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dossier-heading {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-verified {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-emerald);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .defense-text {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin-bottom: 16px;
+            line-height: 1.65;
+        }
+
+        .defense-box {
+            background: rgba(15, 23, 42, 0.8);
+            border-left: 3px solid var(--accent);
+            padding: 14px 18px;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            margin-bottom: 16px;
+        }
+
+        .defense-box.warning {
+            border-left-color: var(--accent-rose);
+            background: rgba(40, 15, 20, 0.4);
+        }
+
+        .defense-box-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 6px;
+            letter-spacing: 0.05em;
+        }
+
+        .defense-box.warning .defense-box-title { color: var(--accent-rose); }
+
+        .code-snippet {
+            background: var(--code-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            font-family: "JetBrains Mono", Consolas, monospace;
+            font-size: 0.82rem;
+            color: #fde68a;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+
+        footer {
+            margin-top: 60px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 28px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <div class="title-badge">UMC301 Project 3 • Pre/Post-Training Track</div>
+                    <h1>Indic Tokenizer Pareto Audit & Domain LoRA SFT Viva Voce</h1>
+                    <div class="subtitle">Grapheme-Aware BPE • Unicode Trap Resolution • Bits-Per-Byte • LoRA PEFT ($r=8, \alpha=16$)</div>
+                </div>
+                <div class="stats-strip">
+                    <div class="stat-item">
+                        <div class="stat-value">5</div>
+                        <div class="stat-label">Viva MCQs</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">100%</div>
+                        <div class="stat-label">Whiteboard Proofs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="controls-bar">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search questions (e.g. Unicode Trap, BPB, LoRA, Misalignment, Akshara)..." oninput="filterSearch()">
+            <div style="display: flex; gap: 10px;">
+                <button class="action-btn" onclick="toggleAll(true)">Expand All Proofs</button>
+                <button class="action-btn" onclick="toggleAll(false)">Collapse All</button>
+                <button class="action-btn" onclick="window.print()">Print / PDF</button>
+            </div>
+        </div>
+
+        <!-- Question 1 -->
+        <div class="q-card" data-keywords="unicode trap akshara fertility telugu hindi combining mark grapheme regex">
+            <div class="q-header">
+                <div class="q-num-badge">Question 1</div>
+                <div>
+                    <div class="q-topic">Computational Linguistics & The "Unicode Trap"</div>
+                    <div class="q-question">Why does standard industrial tokenization (e.g., OpenAI `cl100k_base`) cause Telugu token fertility to explode to 14.45 tokens/word, and how does your grapheme regex solve it?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">Because Telugu words are written in right-to-left order, causing BPE merge tables to search in reverse byte sequence.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">Indic scripts are abugidas (Aksharas: Base Consonant \p{L} + Combining Mark \p{M}). Standard regexes match only \p{L}+, slicing mid-syllable; since BPE forbids merges across chunk boundaries, combining marks fall back to raw UTF-8 bytes. The grapheme regex (?:\p{L}[\p{M}\u200c\u200d]*)+ preserves atomic Aksharas, restoring parity (2.07 tokens/word).</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">Because OpenAI's tokenizer limits Telugu vocabulary to 128 tokens; our custom regex forces the tokenizer to use ASCII phonetic transliteration.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">Because Telugu grammar mandates word compounding up to 256 characters, exceeding the max token length.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-text">
+                        <strong>1. The Akshara Orthographic Structure:</strong> Unlike Latin scripts (linear sequences of independent letters), Indian scripts (Devanagari, Telugu) are <strong>alphasyllabaries (abugidas)</strong> where text is organized into syllable clusters called <em>Aksharas</em>:
+                        $$\text{Akshara} = C_1 + (\text{Virama} + C_2)^* + \text{Matra} + \text{Anusvara}$$
+                    </div>
+                    <div class="defense-box warning">
+                        <div class="defense-box-title">The "Unicode Trap" Mechanics</div>
+                        In the Unicode standard:
+                        <ul>
+                            <li>Base consonants belong to category <code>\p{L}</code> (Letters).</li>
+                            <li>Dependent vowel signs (matras) and viramas belong to category <code>\p{M}</code> (Combining Marks).</li>
+                        </ul>
+                        Standard industrial pre-tokenization regexes (such as <code>cl100k_base</code>):
+                        <div class="code-snippet">[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+...</div>
+                        The expression <code>\p{L}+</code> matches <strong>only</strong> letters, stopping immediately before any combining mark <code>\p{M}</code>. It slices the syllable mid-cluster! Under BPE rules, <strong>merges across pre-tokenization chunk boundaries are strictly forbidden</strong>. Consequently, matras can never merge with consonants and fall back to raw UTF-8 byte tokens (<code>&lt;0xE0&gt;&lt;0xA4&gt;...</code>), exploding Telugu fertility to $14.45\text{ tokens/word}$ ($7\times$ Language Tax!).
+                    </div>
+                    <div class="defense-box">
+                        <div class="defense-box-title">The Surgical Solution: Grapheme-Preserving Regex</div>
+                        <div class="code-snippet">INDIC_GRAPHEME_REGEX = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|(?:\p{L}[\p{M}\u200c\u200d]*)+|\p{N}{1,3}|..."</div>
+                        By explicitly binding <code>\p{L}</code> and all following combining marks <code>[\p{M}\u200c\u200d]*</code> into an unbreakable chunk, the Akshara remains intact throughout BPE training, reducing Telugu fertility to <strong>$2.07\text{ tokens/word}$</strong> (1.00× Parity).
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 2 -->
+        <div class="q-card" data-keywords="bits-per-byte bpb shannon entropy vocabulary pareto frontier embedding table ram">
+            <div class="q-header">
+                <div class="q-num-badge">Question 2</div>
+                <div>
+                    <div class="q-topic">Information Theory & Pareto Frontier Mapping</div>
+                    <div class="q-question">How is Bits-Per-Byte (BPB) mathematically defined, and why does vocabulary expansion $|V|$ exhibit diminishing returns beyond the $|V| = 4\text{K}$ Pareto knee?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">$\text{BPB}(s) = \frac{\sum -\log_2 P(t_i)}{\text{Bytes}(s)}$; beyond $|V| = 4\text{K}$, high-frequency morphemes are already atomic, so marginal fertility improvements drop to 0.36 while embedding table RAM ($\mathcal{M} = |V| \times d \times b$) continues to scale linearly.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">$\text{BPB}(s) = \frac{\text{Bytes}(s)}{\sum P(t_i)}$; beyond 4K, BPE merge tables trigger quadratic search overhead during inference.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">BPB measures the ratio of English tokens to Indic tokens; the 4K limit is imposed by GPU CUDA warp sizes.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">BPB is derived from Huffman trees; expanding $|V| > 4\text{K}$ causes Shannon entropy to become negative.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-box">
+                        <div class="defense-box-title">Whiteboard Formulation: Bits-Per-Byte (BPB)</div>
+                        Under Shannon's source coding theorem, the uncompressed information content (surprisal) of a token sequence $t_1, \dots, t_N$ is $\sum_{i=1}^N -\log_2 P(t_i)$ bits. We normalize total surprisal by the raw uncompressed string length in UTF-8 bytes:
+                        $$\text{BPB}(s) = \frac{\sum_{i=1}^{N} -\log_2 P(t_i)}{\text{Total UTF-8 Bytes of } s}$$
+                        Lower BPB indicates higher subword information density. Our Custom Grapheme BPE achieves <strong>$1.02\text{ BPB}$</strong> on Indic text, compared to $4.54\text{ BPB}$ for <code>cl100k_base</code>.
+                    </div>
+                    <div class="defense-text">
+                        <strong>The Embedding Table Memory Trade-off:</strong> The physical RAM occupied by the token embedding matrix is:
+                        $$\mathcal{M}_{\text{embed}} = |V| \times d_{\text{model}} \times b_{\text{param}} \quad \text{bytes}$$
+                        For $d = 2048$ with 16-bit weights ($b = 2\text{ bytes}$):
+                        <ul>
+                            <li>$|V| = 512 \implies 2.0\text{ MB}$</li>
+                            <li>$|V| = 1\text{K} \implies 4.0\text{ MB}$</li>
+                            <li>$|V| = 4\text{K} \implies 16.0\text{ MB}$</li>
+                            <li>$|V| = 32\text{K} \implies 128.0\text{ MB}$</li>
+                        </ul>
+                        <strong>The Pareto Knee:</strong> Moving from $512 \to 4\text{K}$ drops Telugu fertility from $6.60 \to 2.07$. Beyond $4\text{K}$, all frequent syllables are already atomic; additional tokens only memorize rare full words, giving diminishing compression while continuously inflating embedding RAM.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 3 -->
+        <div class="q-card" data-keywords="lora low-rank adaptation matrix calculus gradient backward initialization alpha rank">
+            <div class="q-header">
+                <div class="q-num-badge">Question 3</div>
+                <div>
+                    <div class="q-topic">PEFT Mathematics & LoRA Gradient Backpropagation</div>
+                    <div class="q-question">In LoRA ($W = W_0 + \frac{\alpha}{r} B A$), why is $B$ initialized to zero while $A$ is initialized from a Gaussian, and what are the exact backpropagation gradients $\frac{\partial \mathcal{L}}{\partial A}$ and $\frac{\partial \mathcal{L}}{\partial B}$?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">Both $A$ and $B$ must be initialized to zero; gradients are computed via finite difference numerical approximation.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">Initializing $B = 0$ guarantees $\Delta W = 0$ at step 0 so training begins exactly at the pre-trained model state; gradients are $\frac{\partial \mathcal{L}}{\partial A} = \frac{\alpha}{r} B^T G x^T$ and $\frac{\partial \mathcal{L}}{\partial B} = \frac{\alpha}{r} G (A x)^T$ where $G = \frac{\partial \mathcal{L}}{\partial h}$.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">Matrix $A$ represents eigenvalues while $B$ represents eigenvectors; $B$ is zeroed to satisfy the Cauchy-Schwarz inequality.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">Matrix $B$ is initialized to zero to prevent the cross-entropy loss from dividing by zero during the first forward pass.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-box">
+                        <div class="defense-box-title">Whiteboard Derivation: LoRA Gradient Propagation</div>
+                        For a pre-trained frozen weight $W_0 \in \mathbb{R}^{d \times k}$, LoRA decomposes the update $\Delta W$ into $B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$ ($r \ll \min(d, k)$):
+                        $$h = W x = W_0 x + \Delta W x = W_0 x + \frac{\alpha}{r} B (A x)$$
+                        <strong>Why $B=0$ and $A \sim \mathcal{N}(0, \sigma^2)$?</strong>
+                        At step $t=0$, $\Delta W = \frac{\alpha}{r} (0 \cdot A) = 0$. The adapter introduces <strong>zero perturbation</strong> to the pre-trained model at the start of fine-tuning, preventing destructive initial updates.
+                        <br><br>
+                        <strong>Matrix Calculus Backpropagation:</strong>
+                        Let $G = \frac{\partial \mathcal{L}}{\partial h} \in \mathbb{R}^{B \times d}$ be the incoming gradient:
+                        <ol>
+                            <li><strong>Gradient w.r.t. Adapter Matrix $A$:</strong>
+                                $$\frac{\partial \mathcal{L}}{\partial A} = \frac{\alpha}{r} B^T G x^T$$
+                            </li>
+                            <li><strong>Gradient w.r.t. Adapter Matrix $B$:</strong>
+                                $$\frac{\partial \mathcal{L}}{\partial B} = \frac{\alpha}{r} G (A x)^T$$
+                            </li>
+                            <li><strong>Gradient Backpropagated to Input Activation $x$:</strong>
+                                $$\frac{\partial \mathcal{L}}{\partial x} = \left( W_0^T + \frac{\alpha}{r} A^T B^T \right) G$$
+                            </li>
+                        </ol>
+                        Base weights remain strictly frozen: $\nabla_{W_0} \mathcal{L} = 0$, training only $0.3414\%$ of parameters.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 4 -->
+        <div class="q-card" data-keywords="embedding misalignment trap prompt loss masking -100 ignore_index native tokenizer">
+            <div class="q-header">
+                <div class="q-num-badge">Question 4</div>
+                <div>
+                    <div class="q-topic">Architectural Invariants & Instruction Loss Masking</div>
+                    <div class="q-question">What is "The Embedding Misalignment Trap", and why must user prompt tokens be masked with `labels = -100` during instruction SFT?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">The trap occurs when token embeddings are stored in int8 format; prompt loss is masked to prevent PyTorch CUDA out-of-memory errors.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">Plugging a newly trained custom tokenizer into a frozen pre-trained model maps token IDs to random unrelated semantic vectors; prompt tokens are masked with -100 (PyTorch ignore_index) so the model only learns to predict completions without wasting capacity memorizing prompt styles.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">The trap happens when positional embeddings exceed 2048 tokens; masking prompt tokens with -100 forces the model to use beam search.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">The trap refers to using BPE on right-to-left scripts; prompt tokens are masked to prevent user inputs from leaking into the test set.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-text">
+                        <strong>1. The Embedding Misalignment Trap:</strong> Attempting to plug a custom-trained tokenizer into a frozen pre-trained transformer is fatal. Each token ID $i$ in a pre-trained embedding table $W_{\text{embed}} \in \mathbb{R}^{|V| \times d}$ is irrevocably tied to the continuous coordinate space learned across trillions of pre-training tokens. Substituting a new tokenizer destroys this mapping, feeding noise vectors into the model.
+                        <br><br>
+                        <strong>Our Architectural Decoupling:</strong>
+                        <ul>
+                            <li><strong>Track A:</strong> Independent information-theoretic audit evaluating vocabulary scale, BPB, and Pareto frontiers.</li>
+                            <li><strong>Track B:</strong> Adapts base SLMs (SmolLM-135M / Qwen2.5-0.5B) using their <strong>native pre-trained tokenizers</strong> and LoRA.</li>
+                        </ul>
+                    </div>
+                    <div class="defense-box">
+                        <div class="defense-box-title">Why Prompt Loss Masking (`labels = -100`) is Mandatory</div>
+                        In instruction fine-tuning:
+                        $$\text{Sequence} = [\text{System Prompt}] + [\text{User Question}] + [\text{Assistant Answer}]$$
+                        If we do not mask the prompt, the model receives gradient updates on the user's question. This wastes capacity training the model to memorize user phrasing. By assigning <code>target_ids = -100</code> on all tokens prior to the assistant response:
+                        $$\mathcal{L} = -\frac{1}{|T_{\text{assistant}}|} \sum_{t \in T_{\text{assistant}}} \log P(x_t \mid x_{<t})$$
+                        PyTorch's <code>CrossEntropyLoss(ignore_index=-100)</code> zeroes out gradients for prompt tokens, focusing 100% of adapter gradient updates strictly on generating accurate Indic completions.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="q-card" data-keywords="chrf bleu perplexity indic morphology evaluation ngram">
+            <div class="q-header">
+                <div class="q-num-badge">Question 5</div>
+                <div>
+                    <div class="q-topic">Evaluation Metrics & Morphological Richness</div>
+                    <div class="q-question">Why is standard word BLEU unreliable for evaluating Indic language generation, and why is character n-gram F-score (chrF) preferred?</div>
+                </div>
+            </div>
+            <div class="q-body">
+                <div class="options-list">
+                    <div class="option-item" onclick="checkOption(this, true)">
+                        <div class="option-marker">A</div>
+                        <div class="option-text">Indic languages are morphologically agglutinative where prefixes, case markers, and postpositions fuse into complex words; word-level BLEU penalizes valid inflections as 0-matches, whereas chrF computes character n-gram precision/recall, rewarding correct stem matches.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">B</div>
+                        <div class="option-text">Word BLEU requires texts to be capitalized, which is unsupported by the Devanagari script.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">C</div>
+                        <div class="option-text">BLEU can only be calculated on English translations through Google Translate API calls.</div>
+                    </div>
+                    <div class="option-item" onclick="checkOption(this, false)">
+                        <div class="option-marker">D</div>
+                        <div class="option-text">chrF is an unsupervised metric that operates without reference target sentences.</div>
+                    </div>
+                </div>
+
+                <button class="reveal-toggle-btn" onclick="toggleDossier(this)">
+                    <span>Show Examiner Solution & Whiteboard Derivation</span>
+                </button>
+
+                <div class="defense-dossier">
+                    <div class="dossier-heading">
+                        <span>Examiner Solution & First-Principles Defense</span>
+                        <span class="badge-verified">Verified</span>
+                    </div>
+                    <div class="defense-text">
+                        <strong>The Failure of Word BLEU on Agglutinative Scripts:</strong>
+                        Word-level BLEU measures exact word n-gram matches. In languages like Telugu and Hindi, grammatical case markers (vibhakti) and postpositions fuse directly to the noun stem (e.g., Telugu: <em>పుస్తకము</em> [book] vs. <em>పుస్తకములో</em> [in the book]).
+                        If the model generates an inflectional variant that is semantically accurate, word BLEU gives a score of <strong>0.0</strong> for that token!
+                    </div>
+                    <div class="defense-box">
+                        <div class="defense-box-title">chrF Formulation (Popović, 2015)</div>
+                        chrF computes the $F_\beta$-score over character n-grams (typically 1 to 6 characters):
+                        $$\text{chrP} = \frac{\sum_{n=1}^6 \text{Matched character n-grams}}{\sum_{n=1}^6 \text{Total candidate character n-grams}}$$
+                        $$\text{chrR} = \frac{\sum_{n=1}^6 \text{Matched character n-grams}}{\sum_{n=1}^6 \text{Total reference character n-grams}}$$
+                        $$\text{chrF}\beta = (1 + \beta^2) \frac{\text{chrP} \cdot \text{chrR}}{\beta^2 \text{chrP} + \text{chrR}}$$
+                        Because it operates at the character n-gram level, chrF gives substantial credit when the base lexical stem is generated correctly even if a trailing case marker differs slightly, correlating far higher with human judgment in Indic NLP.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p><strong>UMC301: Applied Data Science & AI</strong> • Computational and Data Sciences (CDS), IISc Bengaluru</p>
+            <p style="margin-top: 6px;">Spec-Driven Development (SDD) • Project 3 Defense Architecture Guide</p>
+        </div>
+    </footer>
+
+    <script>
+        function checkOption(el, isCorrect) {
+            const parentList = el.closest('.options-list');
+            const items = parentList.querySelectorAll('.option-item');
+            items.forEach(item => item.classList.remove('selected-correct', 'selected-wrong'));
+
+            if (isCorrect) {
+                el.classList.add('selected-correct');
+            } else {
+                el.classList.add('selected-wrong');
+                items.forEach(item => {
+                    const onclickAttr = item.getAttribute('onclick');
+                    if (onclickAttr && onclickAttr.includes('true')) item.classList.add('selected-correct');
+                });
+            }
+
+            const card = el.closest('.q-card');
+            const dossier = card.querySelector('.defense-dossier');
+            const btn = card.querySelector('.reveal-toggle-btn span');
+            if (dossier && !dossier.classList.contains('open')) {
+                dossier.classList.add('open');
+                if (btn) btn.textContent = 'Hide Examiner Solution & Whiteboard Derivation';
+                if (window.renderMathInElement) {
+                    renderMathInElement(dossier, {
+                        delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]
+                    });
+                }
+            }
+        }
+
+        function toggleDossier(btn) {
+            const card = btn.closest('.q-card');
+            const dossier = card.querySelector('.defense-dossier');
+            const span = btn.querySelector('span');
+
+            if (dossier.classList.contains('open')) {
+                dossier.classList.remove('open');
+                span.textContent = 'Show Examiner Solution & Whiteboard Derivation';
+            } else {
+                dossier.classList.add('open');
+                span.textContent = 'Hide Examiner Solution & Whiteboard Derivation';
+                if (window.renderMathInElement) {
+                    renderMathInElement(dossier, {
+                        delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]
+                    });
+                }
+            }
+        }
+
+        function filterSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.q-card');
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                const keywords = (card.getAttribute('data-keywords') || '').toLowerCase();
+                card.style.display = (!query || text.includes(query) || keywords.includes(query)) ? 'block' : 'none';
+            });
+        }
+
+        function toggleAll(expand) {
+            document.querySelectorAll('.defense-dossier').forEach(d => {
+                if (expand) {
+                    d.classList.add('open');
+                    if (window.renderMathInElement) {
+                        renderMathInElement(d, {
+                            delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]
+                        });
+                    }
+                } else {
+                    d.classList.remove('open');
+                }
+            });
+            document.querySelectorAll('.reveal-toggle-btn span').forEach(b => {
+                b.textContent = expand ? 'Hide Examiner Solution & Whiteboard Derivation' : 'Show Examiner Solution & Whiteboard Derivation';
+            });
+        }
+    </script>
+</body>
+</html>
